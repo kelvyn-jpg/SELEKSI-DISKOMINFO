@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Internal Perkantoran & Pengaduan</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f0f4f8;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* --- GAYA HALAMAN LOGIN --- */
+        .login-container {
+            margin: auto;
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .login-container h2 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        .login-container p {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .login-btn:hover { background: #1a252f; }
+        .error-msg {
+            color: #e74c3c;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* --- GAYA DASHBOARD UTAMA & NAVIGASI --- */
+        .dashboard-wrapper {
+            display: none; /* Tersembunyi sebelum login */
+            padding: 20px;
+            width: 100%;
+            flex: 1;
+        }
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+        }
+        .header-title h1 { font-size: 24px; }
+        .header-title p { font-size: 14px; color: #bdc3c7; }
+        .btn-logout {
+            background: #e74c3c;
+            font-size: 13px;
+        }
+        .btn-logout:hover { background: #c0392b; }
+        
+        /* Menu Tab Navigasi */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            max-width: 1200px;
+            margin: 0 auto 25px auto;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 5px;
+        }
+        .tab-btn {
+            background: #e2e8f0;
+            color: #475569;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { background: #cbd5e1; }
+        .tab-btn.active {
+            background: #3498db;
+            color: white;
+        }
+        .tab-btn.tab-complaint.active {
+            background: #e74c3c; /* Pembeda warna untuk tab pengaduan */
+        }
+
+        /* Konten Halaman Dinamis */
+        .page-content {
+            display: none; /* Dikontrol via fungsi tab */
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .page-content.active {
+            display: grid;
+        }
+
+        .main-layout {
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+        }
+        @media (max-width: 768px) {
+            .main-layout, .complaint-layout { grid-template-columns: 1fr !important; }
+        }
+
+        .section-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            height: fit-content;
+        }
+        .section-box h2 {
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 20px;
+        }
+        /* Border kustom untuk box pengaduan */
+        .section-box.complaint-box h2 {
+            border-bottom-color: #e74c3c;
+        }
+
+        .form-inline {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        input, select, textarea {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        textarea {
+            width: 100%;
+            resize: vertical;
+            min-height: 100px;
+        }
+        button {
+            padding: 10px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: #2980b9; }
+
+        /* Komponen List Umum */
+        .item-list { list-style: none; }
+        .item-card {
+            background: #fdfdfd;
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-delete {
+            background: #cbd5e1;
+            color: #333;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .btn-delete:hover { background: #e74c3c; color: white; }
+        .meeting-time { font-size: 12px; color: #7f8c8d; margin-top: 4px; }
+
+        /* Kustom Komponen Pengaduan */
+        .complaint-layout {
+            grid-template-columns: 1fr 1.2fr;
+            gap: 20px;
+            width: 100%;
+        }
+        .complaint-card {
+            background: #fdfdfd;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .complaint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .meta-info {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .complaint-body {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #cbd5e1;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .checkbox-group input {
+            width: auto;
+            cursor: pointer;
+        }
+        .submit-complaint-btn {
+            width: 100%;
+            background: #e74c3c;
+            padding: 12px;
+        }
+        .submit-complaint-btn:hover { background: #c0392b; }
+        
+        /* Badges */
+        .badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            display: inline-block;
+        }
+        .badge.tinggi { background: #e74c3c; }
+        .badge.sedang { background: #f39c12; }
+        .badge.rendah { background: #2ecc71; }
+        .badge.status-pending { background: #94a3b8; }
+        
+        .empty-state {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 20px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ================= SCREEN LOGIN ================= -->
+<div id="loginScreen" class="login-container">
+    <h2>Office Portal</h2>
+    <p>Silakan masuk ke akun kerja Anda</p>
+    
+    <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Masukkan username">
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Masukkan password">
+    </div>
+    
+    <button class="login-btn" onclick="handleLogin()">Masuk</button>
+    <div id="errorMsg" class="error-msg">Username atau password salah!</div>
+</div>
+
+<!-- ================= SCREEN DASHBOARD UTAMA ================= -->
+<div id="dashboardScreen" class="dashboard-wrapper">
+    <header>
+        <div class="header-title">
+            <h1>Office Suite Portal</h1>
+            <p>Selamat datang kembali, <strong id="userDisplay">Staff</strong></p>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">Keluar (Log Out)</button>
+    </header>
+
+    <!-- Menu Navigasi Antar Halaman -->
+    <div class="nav-tabs">
+        <button id="btnTabWorkspace" class="tab-btn active" onclick="switchTab('workspace')">📋 Ruang Kerja Karyawan</button>
+        <button id="btnTabComplaint" class="tab-btn tab-complaint" onclick="switchTab('complaint')">📣 Pusat Pengaduan & Aspirasi</button>
+    </div>
+
+    <!-- HALAMAN 1: RUANG KERJA (TUGAS & MEETING) -->
+    <div id="pageWorkspace" class="page-content main-layout active">
+        <!-- MANAJEMEN TUGAS -->
+        <div class="section-box">
+            <h2>📋 Daftar Tugas Proyek</h2>
+            <div class="form-inline">
+                <input type="text" id="taskInput" placeholder="Tambah tugas baru...">
+                <select id="taskPriority" style="max-width: 110px;">
+                    <option value="tinggi">Tinggi</option>
+                    <option value="sedang" selected>Sedang</option>
+                    <option value="rendah">Rendah</option>
+                </select>
+                <button onclick="addTask()">Tambah</button>
+            </div>
+            <ul id="taskList" class="item-list"></ul>
+        </div>
+
+        <!-- AGENDA RAPAT -->
+        <div class="section-box">
+            <h2>📅 Jadwal Rapat / Meeting</h2>
+            <div class="form-inline" style="flex-wrap: wrap;">
+                <input type="text" id="meetingTitle" placeholder="Nama rapat/topik...">
+                <input type="datetime-local" id="meetingTime" style="max-width: 200px;">
+                <button onclick="addMeeting()">Jadwalkan</button>
+            </div>
+            <ul id="meetingList" class="item-list"></ul>
+        </div>
+    </div>
+
+    <!-- HALAMAN 2: HALAMAN PENGADUAN KARYAWAN -->
+    <div id="pageComplaint" class="page-content complaint-layout">
+        <!-- FORM PENGADUAN -->
+        <div class="section-box complaint-box">
+            <h2>✍️ Buat Laporan / Aspirasi</h2>
+            <div class="form-group">
+                <label>Judul Pengaduan</label>
+                <input type="text" id="compTitle" placeholder="Contoh: AC Ruang Rapat Lt. 2 Bocor">
+            </div>
+            <div class="form-group">
+                <label>Kategori Masalah</label>
+                <select id="compCategory">
+                    <option value="Fasilitas & Infrastruktur">Fasilitas & Infrastruktur</option>
+                    <option value="Sistem & IT Support">Sistem & IT Support</option>
+                    <option value="Lingkungan & SDM Kerja">Lingkungan & SDM Kerja</option>
+                    <option value="Lain-lain">Lain-lain</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tingkat Urgensi</label>
+                <select id="compUrgency">
+                    <option value="rendah">Rendah (Saran/Masukan)</option>
+                    <option value="sedang" selected>Sedang (Mengganggu Kerja)</option>
+                    <option value="tinggi">Tinggi (Darurat/Aktivitas Lumpuh)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Detail Laporan</label>
+                <textarea id="compDetails" placeholder="Jelaskan kronologi, lokasi, atau saran komprehensif Anda..."></textarea>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="compAnonymous">
+                <label for="compAnonymous" style="font-size:13px; cursor:pointer;">Kirim sebagai <strong>Anonim (Sembunyikan Nama)</strong></label>
+            </div>
+            <button class="submit-complaint-btn" onclick="addComplaint()">Kirim Pengaduan</button>
+        </div>
+
+        <!-- DAFTAR RIWAYAT PENGADUAN -->
+        <div class="section-box complaint-box">
+            <h2>📂 Riwayat Laporan Masuk</h2>
+            <ul id="complaintList" class="item-list"></ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- AKUN SIMULASI ---
+    const VALID_USER = "admin";
+    const VALID_PASS = "123";
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const isLoggedIn = localStorage.getItem("office_logged_in");
+        if (isLoggedIn === "true") {
+            showDashboard();
+        } else {
+            showLogin();
+        }
+    });
+
+    // --- LOGIKA LOGIN & LOGOUT ---
+    function handleLogin() {
+        const user = document.getElementById("username").value.trim();
+        const pass = document.getElementById("password").value;
+        const errorMsg = document.getElementById("errorMsg");
+
+        if (user === VALID_USER && pass === VALID_PASS) {
+            localStorage.setItem("office_logged_in", "true");
+            errorMsg.style.display = "none";
+            document.getElementById("username").value = "";
+            document.getElementById("password").value = "";
+            showDashboard();
+        } else {
+            errorMsg.style.display = "block";
+        }
+    }
+
+    function handleLogout() {
+        localStorage.removeItem("office_logged_in");
+        showLogin();
+    }
+
+    function showDashboard() {
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("dashboardScreen").style.display = "block";
+        document.getElementById("userDisplay").innerText = VALID_USER.toUpperCase();
+        
+        // Render semua data dari LocalStorage
+        renderTasks();
+        renderMeetings();
+        renderComplaints();
+    }
+
+    function showLogin() {
+        document.getElementById("loginScreen").style.display = "block";
+        document.getElementById("dashboardScreen").style.display = "none";
+    }
+
+    // --- LOGIKA NAVIGASI TAB ---
+    function switchTab(target) {
+        // Atur status keaktifan tombol tab
+        document.getElementById("btnTabWorkspace").classList.remove("active");
+        document.getElementById("btnTabComplaint").classList.remove("active");
+        // Atur keaktifan halaman konten
+        document.getElementById("pageWorkspace").classList.remove("active");
+        document.getElementById("pageComplaint").classList.remove("active");
+
+        if (target === 'workspace') {
+            document.getElementById("btnTabWorkspace").classList.add("active");
+            document.getElementById("pageWorkspace").classList.add("active");
+        } else if (target === 'complaint') {
+            document.getElementById("btnTabComplaint").classList.add("active");
+            document.getElementById("pageComplaint").classList.add("active");
+        }
+    }
+
+    // --- UTILITY DATA LOCALSTORAGE ---
+    function getTasks() { return JSON.parse(localStorage.getItem("office_tasks")) || []; }
+    function getMeetings() { return JSON.parse(localStorage.getItem("office_meetings")) || []; }
+    function getComplaints() { return JSON.parse(localStorage.getItem("office_complaints")) || []; }
+
+    // --- CORE FITUR 1: MANAJEMEN TUGAS ---
+    function addTask() {
+        const text = document.getElementById("taskInput").value.trim();
+        const priority = document.getElementById("taskPriority").value;
+        if (!text) return alert("Isi nama tugas terlebih doa!");
+
+        const tasks = getTasks();
+        tasks.push({ id: Date.now(), text, priority });
+        localStorage.setItem("office_tasks", JSON.stringify(tasks));
+        document.getElementById("taskInput").value = "";
+        renderTasks();
+    }
+
+    function deleteTask(id) {
+        const tasks = getTasks().filter(t => t.id !== id);
+        localStorage.setItem("office_tasks", JSON.stringify(tasks));
+        renderTasks();
+    }
+
+    /* Rendering List Tugas */
+    function renderTasks() {
+        const list = document.getElementById("taskList");
+        list.innerHTML = "";
+        const tasks = getTasks();
+        if(tasks.length === 0) {
+            list.innerHTML = `<li class="empty-state">Belum ada daftar tugas.</li>`;
+            return;
+        }
+        tasks.forEach(task => {
+            list.innerHTML += `
+                <li class="item-card">
+                    <div>
+                        <span class="badge ${task.priority}">${task.priority.toUpperCase()}</span>
+                        <span style="margin-left: 8px;">${task.text}</span>
+                    </div>
+                    <button class="btn-delete" onclick="deleteTask(${task.id})">Selesai</button>
+                </li>
+            `;
+        });
+    }
+
+    // --- CORE FITUR 2: AGENDA RAPAT ---
+    function addMeeting() {
+        const title = document.getElementById("meetingTitle").value.trim();
+        const time = document.getElementById("meetingTime").value;
+        if (!title || !time) return alert("Isi nama rapat dan tentukan waktunya!");
+
+        const meetings = getMeetings();
+        meetings.push({ id: Date.now(), title, time });
+        meetings.sort((a, b) => new Date(a.time) - new Date(b.time));
+        localStorage.setItem("office_meetings", JSON.stringify(meetings));
+
+        document.getElementById("meetingTitle").value = "";
+        document.getElementById("meetingTime").value = "";
+        renderMeetings();
+    }
+
+    function deleteMeeting(id) {
+        const meetings = getMeetings().filter(m => m.id !== id);
+        localStorage.setItem("office_meetings", JSON.stringify(meetings));
+        renderMeetings();
+    }
+
+    /* Rendering Jadwal Rapat */
+    function renderMeetings() {
+        const list = document.getElementById("meetingList");
+        list.innerHTML = "";
+        const meetings = getMeetings();
+        if(meetings.length === 0) {
+            list.innerHTML = `<li class="empty-state">Tidak ada jadwal rapat terdekat.</li>`;
+            return;
+        }
+        meetings.forEach(meet => {
+            const dateObj = new Date(meet.time);
+            const formattedDate = dateObj.toLocaleDateString('id-ID', { 
+                weekday: 'long', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' 
+            });
+
+            list.innerHTML += `
+                <li class="item-card">
+                    <div>
+                        <strong>${meet.title}</strong>
+                        <div class="meeting-time">🕒 ${formattedDate} WIB</div>
+                    </div>
+                    <button class="btn-delete" onclick="deleteMeeting(${meet.id})">Batal</button>
+                </li>
+            `;
+        });
+    }
+
+    // --- CORE FITUR 3: PENGADUAN KARYAWAN ---
+    function addComplaint() {
+        const title = document.getElementById("compTitle").value.trim();
+        const category = document.getElementById("compCategory").value;
+        const urgency = document.getElementById("compUrgency").value;
+        const details = document.getElementById("compDetails").value.trim();
+        const isAnonymous = document.getElementById("compAnonymous").checked;
+
+        if (!title || !details) return alert("Mohon lengkapi judul dan detail laporan pengaduan Anda!");
+
+        const reporter = isAnonymous ? "Anonim" : VALID_USER.toUpperCase();
+        const complaints = getComplaints();
+        
+        complaints.unshift({
+            id: Date.now(),
+            title,
+            category,
+            urgency,
+            details,
+            reporter,
+            date: new Date().toISOString(),
+            status: "Pending"
+        });
+
+        localStorage.setItem("office_complaints", JSON.stringify(complaints));
+        
+        // Reset form setelah sukses
+        document.getElementById("compTitle").value = "";
+        document.getElementById("compDetails").value = "";
+        document.getElementById("compAnonymous").checked = false;
+        
+        renderComplaints();
+        alert("Laporan pengaduan berhasil dikirim ke basis data pusat!");
+    }
+
+    /* Rendering List Pengaduan */
+    function renderComplaints() {
+        const list = document.getElementById("complaintList");
+        list.innerHTML = "";
+        const complaints = getComplaints();
+
+        if (complaints.length === 0) {
+            list.innerHTML = `<li class="empty-state">Belum ada riwayat pengaduan masuk.</li>`;
+            return;
+        }
+
+        complaints.forEach(item => {
+            const dateObj = new Date(item.date);
+            const formattedDate = dateObj.toLocaleDateString('id-ID', {
+                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+
+            list.innerHTML += `
+                <li class="complaint-card">
+                    <div class="complaint-header">
+                        <h4 style="color:#2c3e50;"><strong>${item.title}</strong></h4>
+                        <span class="badge status-pending">${item.status}</span>
+                    </div>
+                    <div class="meta-info">
+                        <span>📁 ${item.category}</span>
+                        <span>👤 Pelapor: <strong>${item.reporter}</strong></span>
+                        <span>🕒 ${formattedDate} WIB</span>
+                        <span class="badge ${item.urgency}">${item.urgency.toUpperCase()}</span>
+                    </div>
+                    <div class="complaint-body">
+                        ${item.details.replace(/\n/g, '<br>')}
+                    </div>
+                </li>
+            `;
+        });
+    }
+</script>
+
+</body>
+</html>
